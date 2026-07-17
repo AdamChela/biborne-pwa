@@ -475,10 +475,7 @@ body.customer-view .qa-chips.on{display:flex;}
     </div>
     <div class="li-filters">
       <div class="lf-chip on" data-f="all" onclick="setListFilter('all')">Toutes</div>
-      <div class="lf-chip" data-f="todo" onclick="setListFilter('todo')">À faire</div>
-      <div class="lf-chip" data-f="in_progress" onclick="setListFilter('in_progress')">En cours</div>
-      <div class="lf-chip" data-f="waiting" onclick="setListFilter('waiting')">En attente</div>
-      <div class="lf-chip" data-f="urgent" onclick="setListFilter('urgent')">Urgent</div>
+      <div class="lf-chip" data-f="todo" onclick="setListFilter('todo')">Pas fait</div>
       <div class="lf-chip" data-f="done" onclick="setListFilter('done')">Fait</div>
     </div>
   </div>
@@ -714,10 +711,7 @@ const S = {
 
 const TICKET = {
   todo:{label:"À faire", cls:"todo", color:"#E74C3C"},
-  in_progress:{label:"En cours", cls:"in_progress", color:"#F1C40F"},
   done:{label:"Fait", cls:"done", color:"#2ECC71"},
-  waiting:{label:"En attente", cls:"waiting", color:"#3B82F6"},
-  urgent:{label:"Urgent", cls:"urgent", color:"#E74C3C"},
 };
 
 const CHECK_SVG=`<svg viewBox="0 0 16 11" width="13" height="9" fill="none"><path class="c1" d="M1 5.5L4.5 9L11 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path class="c2" d="M5.5 5.5L9 9L15.5 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
