@@ -1,0 +1,9 @@
+{
+  "name": "Biborne Messagerie",
+  "short_name": "Biborne",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#E85D24",
+  "icons": [{ "src": "/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }]
+}
