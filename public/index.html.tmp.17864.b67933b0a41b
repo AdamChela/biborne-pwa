@@ -251,8 +251,6 @@ body.customer-view .qa-chips.on{display:flex;}
 .br.client .msg-check{color:rgba(0,0,0,.4);}
 .msg-check.failed{color:#E74C3C;opacity:1;cursor:pointer;}
 .msg-check.failed:active{transform:scale(.9);}
-.msg-check-cancel{display:inline-flex;vertical-align:middle;margin-left:3px;color:#E74C3C;opacity:.75;cursor:pointer;}
-.msg-check-cancel:active{transform:scale(.9);}
 .msg-spin{display:inline-block;width:11px;height:11px;border:2px solid rgba(0,0,0,.2);border-top-color:currentColor;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-left:4px;}
 
 /* Actions (modifier/supprimer) : toujours visibles mais discrètes (le survol seul ne marche pas au tactile) */
@@ -1544,7 +1542,7 @@ function addMsg(msg){
   if(msg.edited) c+=`<span class="msg-edited-tag">(modifié)</span>`;
   const time=new Date(msg.createdAt||Date.now()).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
   const checkHtml=isMe?(msg.failed
-    ?`<span class="msg-check failed" title="Échec de l'envoi — appuyer pour réessayer" onclick="retryFailedMessage('${msg.id}')">${RETRY_SVG}</span><span class="msg-check-cancel" title="Annuler cet envoi" onclick="cancelFailedMessage('${msg.id}')">${CANCEL_SVG}</span>`
+    ?`<span class="msg-check failed" title="Échec de l'envoi — appuyer pour réessayer" onclick="retryFailedMessage('${msg.id}')">${RETRY_SVG}</span><span class="msg-check-cancel" title="Annuler l'envoi" onclick="cancelFailedMessage('${msg.id}')">${CANCEL_SVG}</span>`
     :`<span class="msg-check ${msg.status==="read"?"read":""}">${CHECK_SVG}</span>`):"";
   c+=`<div class="bb-time">${time}${checkHtml}</div>`;
   bb.innerHTML=c;
@@ -1626,30 +1624,12 @@ function markMsgFailed(id){
   chk.innerHTML=RETRY_SVG;
   chk.title="Échec de l'envoi — appuyer pour réessayer";
   chk.setAttribute("onclick","retryFailedMessage('"+id+"')");
-  // Croix à côté du bouton réessayer : le retry seul laissait le message coincé pour toujours
-  // quand le fichier ne pourra jamais s'envoyer (ex: type refusé par le serveur, .exe, etc.).
-  if(!row.querySelector(".msg-check-cancel")){
-    const cancel=document.createElement("span");
-    cancel.className="msg-check-cancel";
-    cancel.title="Annuler cet envoi";
-    cancel.innerHTML=CANCEL_SVG;
-    cancel.setAttribute("onclick","cancelFailedMessage('"+id+"')");
-    chk.insertAdjacentElement("afterend",cancel);
-  }
-}
-// Retire définitivement un message qui a échoué (et ne pourra pas être réessayé avec succès) :
-// supprime la bulle de l'écran et l'entrée en mémoire, sans toucher au serveur (rien n'y a jamais été créé).
-function cancelFailedMessage(id){
-  const row=findMsgRow(id);
-  if(row) row.remove();
-  delete S.messagesById[id];
 }
 async function retryFailedMessage(id){
   const msg=S.messagesById[id];
   if(!msg||!S.convId) return;
   const row=findMsgRow(id);
   const chk=row?.querySelector(".msg-check");
-  row?.querySelector(".msg-check-cancel")?.remove();
   if(chk){chk.classList.remove("failed");chk.innerHTML='<span class="msg-spin"></span>';chk.removeAttribute("onclick");}
   try{
     let real;
@@ -2030,18 +2010,6 @@ function markCallConnected(){
   startCallTimer();
 }
 
-// Serveurs ICE : le STUN seul (stun.l.google.com) ne suffit pas à connecter deux appareils derrière
-// un NAT restrictif/pare-feu d'entreprise (cas fréquent au bureau) — la connexion "sonne" mais aucun
-// média ne passe et le chrono reste bloqué à 00:00. Le serveur TURN (Open Relay Project, gratuit) sert
-// de relais dans ce cas pour que l'appel passe quand même. Si ça recommence à bloquer plus tard, il
-// faudra un TURN dédié (le service gratuit est limité à 20 Go/mois, partagé entre tous ses utilisateurs).
-const ICE_SERVERS=[
-  {urls:"stun:stun.l.google.com:19302"},
-  {urls:"turn:openrelay.metered.ca:80",username:"openrelayproject",credential:"openrelayproject"},
-  {urls:"turn:openrelay.metered.ca:443",username:"openrelayproject",credential:"openrelayproject"},
-  {urls:"turn:openrelay.metered.ca:443?transport=tcp",username:"openrelayproject",credential:"openrelayproject"},
-];
-
 // Appel sortant (employé) — isVideo=true pour un appel en visio.
 // target={type:"client"|"guest", id, name} — par défaut, le client de la conversation courante.
 async function startCall(isVideo,target){
@@ -2050,7 +2018,7 @@ async function startCall(isVideo,target){
   if(!t.id){alert((t.type==="guest"?"Invité":"Client")+" introuvable (numéro/identifiant manquant).");return;}
   try{
     const session=await api("/api/calls",{method:"POST",body:JSON.stringify({targetType:t.type,targetId:t.id,type:isVideo?"video":"audio"})});
-    const pc=new RTCPeerConnection({iceServers:ICE_SERVERS});
+    const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});
     S.call={sessionId:session.id,pc,isCaller:true,peerId:t.id,peerType:t.type,isVideo,timerStarted:false};
     pc.onicecandidate=({candidate})=>{if(candidate) S.socket?.emit("call:ice",{targetType:t.type,targetId:t.id,sessionId:session.id,candidate});};
     pc.ontrack=e=>{
@@ -2099,7 +2067,7 @@ async function acceptCall(){
   const {sessionId,offer,callerId,isVideo}=incomingCall;
   document.getElementById("incoming-ov").classList.add("h");
   try{
-    const pc=new RTCPeerConnection({iceServers:ICE_SERVERS});
+    const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});
     S.call={sessionId,pc,isCaller:false,peerId:callerId,isVideo,timerStarted:false};
     pc.onicecandidate=({candidate})=>{if(candidate) S.socket?.emit("call:ice",{targetType:"employee",targetId:callerId,sessionId,candidate});};
     pc.ontrack=e=>{
